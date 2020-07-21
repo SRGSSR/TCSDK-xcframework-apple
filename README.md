@@ -11,6 +11,8 @@ Use [Swift Package Manager](https://swift.org/package-manager) directly [within 
 
 We have a quite recent [mirror of the source code](https://github.com/SRGSSR/tagcommander-src-apple), kept private, which can be used to build all binary flavors, then combined as an XCFramework.
 
+**You should first consider releasing an update to [TCCore](https://github.com/SRGSSR/TCCore-xcframework-apple), as TCSDK depends on it. Note that there is no binary dependency declared in the SPM manifest, as dependencies are currently not supported for binaries**.
+
 ### Building the XCFramework
 
 To build the XCFramework:
