@@ -3,14 +3,14 @@
 import PackageDescription
 
 struct PackageMetadata {
-    static let version: String = "4.4.1-srg3"
-    static let checksum: String = "78c3fca0826341606186f926622a6796529123d940554e4fcfabe1677037ed6c"
+    static let version: String = "4.4.1-srg4+b1"
+    static let checksum: String = "0c0fd2abdc2b2d0e6a2ff075c1850d17f09f8eee274cfcf0f20aea454ff17b70"
 }
 
 let package = Package(
     name: "TCSDK",
     platforms: [
-        .iOS(.v8),
+        .iOS(.v9),
         .tvOS(.v9)
     ],
     products: [
