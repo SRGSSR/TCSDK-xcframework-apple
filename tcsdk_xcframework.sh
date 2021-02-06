@@ -53,7 +53,7 @@ xcodebuild -create-xcframework \
 rm -rf variants
 popd > /dev/null
 
-pushd $execution_dir > /dev/null
+pushd "$execution_dir" > /dev/null
 
 zip -r "$xcframework_zip_name" "$xcframework_name" > /dev/null
 rm -rf "$xcframework_name"
