@@ -1,56 +1,85 @@
 #!/bin/bash
 
+# `--no-debug-symbols` option does not include dSYMs and BCSymbolMaps. Optional, default: debug symbols included.
+
 execution_dir=`pwd`
 
-xcframework_name="TCSDK.xcframework"
+scheme_name="TCSDK"
+framework_name="$scheme_name.framework"
+xcframework_name="$scheme_name.xcframework"
 xcframework_zip_name="$xcframework_name.zip"
 
 xcframework_path="$execution_dir/$xcframework_name"
 package_file_path="$execution_dir/Package.swift"
 
-framework_dir="$1/TagCommander"
+xcarchive_framework="Products/Library/Frameworks/$framework_name"
+xcarchive_dsym="dSYMs/$framework_name.dSYM"
+xcarchive_bc_symbol_maps="BCSymbolMaps"
+
+iphoneos_archive="archives/iphoneos.xcarchive"
+iphonesimulator_archive="archives/iphonesimulator.xcarchive"
+appletvos_archive="archives/appletvos.xcarchive"
+appletvsimulator_archive="archives/appletvsimulator.xcarchive"
+
+framework_dir="${@: -1}/TagCommander"
 if [ ! -d "$framework_dir" ]; then
     echo "Please provide a correct Tag Commander local source code repository file path"
     exit 0
 fi
 
 rm -rf "$xcframework_path"
+rm -rf "$xcframework_path.zip"
 
 pushd "$framework_dir" > /dev/null
 
 echo "Building iphoneos variant..."
-mkdir -p variants/iphoneos
-xcodebuild archive -scheme TCSDK -sdk iphoneos &> /dev/null
-cp -r TCSDK.framework variants/iphoneos
-rm -rf TCCore.framework
+xcodebuild archive -scheme $scheme_name -sdk iphoneos -archivePath $iphoneos_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
 
 echo "Building iphonesimulator variant..."
-mkdir -p variants/iphonesimulator
-xcodebuild archive -scheme TCSDK -sdk iphonesimulator &> /dev/null
-cp -r TCSDK.framework variants/iphonesimulator
-rm -rf TCCore.framework
+xcodebuild archive -scheme $scheme_name -sdk iphonesimulator -archivePath $iphonesimulator_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
 
 echo "Building appletvos variant..."
-mkdir -p variants/appletvos
-xcodebuild archive -scheme TCSDK -sdk appletvos &> /dev/null
-cp -r TCSDK.framework variants/appletvos
-rm -rf TCCore.framework
+xcodebuild archive -scheme $scheme_name -sdk appletvos -archivePath $appletvos_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
 
 echo "Building appletvsimulator variant..."
-mkdir -p variants/appletvsimulator
-xcodebuild archive -scheme TCSDK -sdk appletvsimulator &> /dev/null
-cp -r TCSDK.framework variants/appletvsimulator
-rm -rf TCCore.framework
+xcodebuild archive -scheme $scheme_name -sdk appletvsimulator -archivePath $appletvsimulator_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
 
-echo "Packaging XCFramework..."
+if [ "$1" == "--no-debug-symbols" ]; then
+    echo "Packaging XCFramework without debug symbols..."
+else
+    echo "Packaging XCFramework with debug symbols..."
+    iphoneos_debug_symbols_opts=( -debug-symbols "$framework_dir/$iphoneos_archive/$xcarchive_dsym" )
+    for bc_symbol_map in `find "$iphoneos_archive/$xcarchive_bc_symbol_maps" -type f -name "*"`
+    do
+        iphoneos_debug_symbols_opts+=( -debug-symbols "$framework_dir/$bc_symbol_map" )
+    done
+
+    iphonesimulator_debug_symbols_opts=( -debug-symbols "$framework_dir/$iphonesimulator_archive/$xcarchive_dsym" )
+
+    appletvos_debug_symbols_opts=( -debug-symbols "$framework_dir/$appletvos_archive/$xcarchive_dsym" )
+    for bc_symbol_map in `find "$appletvos_archive/$xcarchive_bc_symbol_maps" -type f -name "*"`
+    do
+        appletvos_debug_symbols_opts+=( -debug-symbols "$framework_dir/$bc_symbol_map" )
+    done
+
+    appletvsimulator_debug_symbols_opts=( -debug-symbols "$framework_dir/$appletvsimulator_archive/$xcarchive_dsym" )
+fi
+
 xcodebuild -create-xcframework \
-    -framework variants/iphoneos/TCSDK.framework \
-    -framework variants/iphonesimulator/TCSDK.framework \
-    -framework variants/appletvos/TCSDK.framework \
-    -framework variants/appletvsimulator/TCSDK.framework \
-    -output "$xcframework_path" &> /dev/null
+    -framework "$iphoneos_archive/$xcarchive_framework" \
+    "${iphoneos_debug_symbols_opts[@]}" \
+    -framework "$iphonesimulator_archive/$xcarchive_framework" \
+    "${iphonesimulator_debug_symbols_opts[@]}" \
+    -framework "$appletvos_archive/$xcarchive_framework" \
+    "${appletvos_debug_symbols_opts[@]}" \
+    -framework "$appletvsimulator_archive/$xcarchive_framework" \
+    "${appletvsimulator_debug_symbols_opts[@]}" \
+    -output "$xcframework_path"
 
-rm -rf variants
+echo "Cleanup source code repository..."
+rm -rf archives
+rm "$framework_name"
+
 popd > /dev/null
 
 pushd "$execution_dir" > /dev/null
