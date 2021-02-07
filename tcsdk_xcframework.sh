@@ -38,16 +38,16 @@ rm -rf "$xcframework_path.zip"
 pushd "$framework_dir" > /dev/null
 
 echo "Building iphoneos variant..."
-xcodebuild archive -scheme $scheme_name -sdk iphoneos -archivePath $iphoneos_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
+xcodebuild clean archive -scheme $scheme_name -sdk iphoneos -archivePath $iphoneos_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
 
 echo "Building iphonesimulator variant..."
-xcodebuild archive -scheme $scheme_name -sdk iphonesimulator -archivePath $iphonesimulator_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
+xcodebuild clean archive -scheme $scheme_name -sdk iphonesimulator -archivePath $iphonesimulator_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
 
 echo "Building appletvos variant..."
-xcodebuild archive -scheme $scheme_name -sdk appletvos -archivePath $appletvos_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
+xcodebuild clean archive -scheme $scheme_name -sdk appletvos -archivePath $appletvos_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
 
 echo "Building appletvsimulator variant..."
-xcodebuild archive -scheme $scheme_name -sdk appletvsimulator -archivePath $appletvsimulator_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
+xcodebuild clean archive -scheme $scheme_name -sdk appletvsimulator -archivePath $appletvsimulator_archive SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES &> /dev/null
 
 if [ "$1" == "--no-debug-symbols" ]; then
     echo "Packaging XCFramework without debug symbols..."
