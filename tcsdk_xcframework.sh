@@ -2,7 +2,7 @@
 
 # `--no-debug-symbols` option does not include dSYMs and BCSymbolMaps. Optional, default: debug symbols included.
 
-execution_dir=`pwd`
+script_dir=`cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd`
 
 scheme_name="TCSDK"
 framework_name="$scheme_name.framework"
@@ -10,8 +10,8 @@ xcframework_name="$scheme_name.xcframework"
 xcframework_zip_name="$xcframework_name.zip"
 package_file_name="Package.swift"
 
-xcframework_path="$execution_dir/$xcframework_name"
-package_file_path="$execution_dir/$package_file_name"
+xcframework_path="$script_dir/$xcframework_name"
+package_file_path="$script_dir/$package_file_name"
 
 xcarchive_framework="Products/Library/Frameworks/$framework_name"
 xcarchive_dsym="dSYMs/$framework_name.dSYM"
@@ -22,14 +22,11 @@ iphonesimulator_archive="archives/iphonesimulator.xcarchive"
 appletvos_archive="archives/appletvos.xcarchive"
 appletvsimulator_archive="archives/appletvsimulator.xcarchive"
 
-framework_dir="${@: -1}/TagCommander"
+absolute_dir=`cd "${@: -1}" > /dev/null; pwd`
+framework_dir="$absolute_dir/TagCommander"
 if [ ! -d "$framework_dir" ]; then
     echo "Please provide a correct Tag Commander local source code repository file path"
     exit 0
-fi
-
-if [ ! -f "$package_file_path" ]; then
-    echo "Next time, execute the script in the working directory, and the Package.swift file will be updated"
 fi
 
 rm -rf "$xcframework_path"
@@ -87,43 +84,42 @@ rm "$framework_name"
 
 popd > /dev/null
 
-pushd "$execution_dir" > /dev/null
+pushd "$script_dir" > /dev/null
 
 zip -r "$xcframework_zip_name" "$xcframework_name" > /dev/null
 rm -rf "$xcframework_name"
 
-# Currently a Package.swift file must be found for the command to succeed
+xcframework_zip_path="$script_dir/$xcframework_zip_name"
+if [ ! -f "$xcframework_zip_path" ]; then
+    echo "XCFramework creation failed."
+    exit 1
+fi
+
+# Currently a Package.swift file must be found for the swift package command to succeed
 dummy_package_file_created=false
 if [ ! -f "$package_file_path" ]; then
     touch "$package_file_path"
     dummy_package_file_created=true
 fi
 
-xcframework_zip_path="NaN"
-hash="NaN"
-saved_information=""
+hash=`swift package compute-checksum "$xcframework_zip_name"`
 
-if [ -f "$xcframework_zip_name" ]; then
-    xcframework_zip_path="$execution_dir/$xcframework_zip_name"
+if ! $dummy_package_file_created; then
+    old_hash=$(grep 'checksum: String =' $package_file_path)
+    old_hash="$(echo -e "${old_hash}" | sed -e 's/^[[:space:]]*//')"
 
-    hash=`swift package compute-checksum "$xcframework_zip_name"`
+    new_hash="static let checksum: String = \"$hash\""
+    sed -i "" "s/$old_hash/$new_hash/g" $package_file_path # -i "" on BSD, -i -e on GNU
 
-    if ! $dummy_package_file_created; then
-        old_hash=$(grep 'checksum: String =' $package_file_path)
-        old_hash="$(echo -e "${old_hash}" | sed -e 's/^[[:space:]]*//')"
-
-        new_hash="static let checksum: String = \"$hash\""
-        sed -i "" "s/$old_hash/$new_hash/g" $package_file_path # -i "" on BSD, -i -e on GNU
-
-        saved_information=", saved in $package_file_name"
-    fi
+    saved_information=", saved in $package_file_name"
 fi
 
 echo ""
 echo "The XCFramework zip is saved at $xcframework_zip_path."
 echo "The XCFramework zip hash is $hash$saved_information."
 echo ""
-echo "Please keep the zip and its hash in a safe place, as regenerating a new zip will produce a new hash."
+echo "Please keep the zip and its hash in a safe place, as regenerating a new zip will produce a new hash. The Package.swift file"
+echo "was automatically updated with the new hash, please manually commit the changes."
 
 if $dummy_package_file_created; then
     rm "$package_file_path"
