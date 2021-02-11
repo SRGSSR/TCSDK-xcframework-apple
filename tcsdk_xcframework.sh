@@ -51,7 +51,7 @@ if [ "$1" == "--no-debug-symbols" ]; then
 else
     echo "Packaging XCFramework with debug symbols..."
     iphoneos_debug_symbols_opts=( -debug-symbols "$framework_dir/$iphoneos_archive/$xcarchive_dsym" )
-    for bc_symbol_map in `find "$iphoneos_archive/$xcarchive_bc_symbol_maps" -type f -name "*"`
+    for bc_symbol_map in `find "$iphoneos_archive/$xcarchive_bc_symbol_maps" -type f -name "*.bcsymbolmap"`
     do
         iphoneos_debug_symbols_opts+=( -debug-symbols "$framework_dir/$bc_symbol_map" )
     done
@@ -59,7 +59,7 @@ else
     iphonesimulator_debug_symbols_opts=( -debug-symbols "$framework_dir/$iphonesimulator_archive/$xcarchive_dsym" )
 
     appletvos_debug_symbols_opts=( -debug-symbols "$framework_dir/$appletvos_archive/$xcarchive_dsym" )
-    for bc_symbol_map in `find "$appletvos_archive/$xcarchive_bc_symbol_maps" -type f -name "*"`
+    for bc_symbol_map in `find "$appletvos_archive/$xcarchive_bc_symbol_maps" -type f -name "*.bcsymbolmap"`
     do
         appletvos_debug_symbols_opts+=( -debug-symbols "$framework_dir/$bc_symbol_map" )
     done
