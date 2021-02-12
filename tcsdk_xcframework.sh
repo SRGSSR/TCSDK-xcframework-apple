@@ -50,18 +50,36 @@ if [ "$1" == "--no-debug-symbols" ]; then
     echo "Packaging XCFramework without debug symbols..."
 else
     echo "Packaging XCFramework with debug symbols..."
-    iphoneos_debug_symbols_opts=( -debug-symbols "$framework_dir/$iphoneos_archive/$xcarchive_dsym" )
-    for bc_symbol_map in `find "$iphoneos_archive/$xcarchive_bc_symbol_maps" -type f -name "*.bcsymbolmap"`
-    do
-        iphoneos_debug_symbols_opts+=( -debug-symbols "$framework_dir/$bc_symbol_map" )
+
+    # We must only package bcsymbolmaps matching the dSYM for each architecture. The unique identifiers of these symbol maps
+    # are generated from the dSYM using the dwarfdump command, providing a way to find the right ones. For more information
+    # see https://instabug.com/blog/ios-binary-framework/. This article also recommends running dsymutil again to ensure reports 
+    # are as much symbolicated as possible.
+
+    iphoneos_dsym="$framework_dir/$iphoneos_archive/$xcarchive_dsym"
+    iphoneos_debug_symbols_opts=( -debug-symbols "$iphoneos_dsym" )
+    iphoneos_bcsymbolmap_uuids=$(dwarfdump --uuid "$iphoneos_dsym" | cut -d ' ' -f2)
+    for bc_symbol_map in `find "$iphoneos_archive/$xcarchive_bc_symbol_maps" -type f -name "*.bcsymbolmap"`; do
+        for uuid in $iphoneos_bcsymbolmap_uuids; do
+            if [ "$(basename "$bc_symbol_map" ".bcsymbolmap")" == "$uuid" ]; then
+                dsymutil --symbol-map "$bc_symbol_map" "$iphoneos_dsym"
+                iphoneos_debug_symbols_opts+=( -debug-symbols "$framework_dir/$bc_symbol_map" )
+            fi
+        done
     done
 
     iphonesimulator_debug_symbols_opts=( -debug-symbols "$framework_dir/$iphonesimulator_archive/$xcarchive_dsym" )
 
-    appletvos_debug_symbols_opts=( -debug-symbols "$framework_dir/$appletvos_archive/$xcarchive_dsym" )
-    for bc_symbol_map in `find "$appletvos_archive/$xcarchive_bc_symbol_maps" -type f -name "*.bcsymbolmap"`
-    do
-        appletvos_debug_symbols_opts+=( -debug-symbols "$framework_dir/$bc_symbol_map" )
+    appletvos_dsym="$framework_dir/$appletvos_archive/$xcarchive_dsym"
+    appletvos_debug_symbols_opts=( -debug-symbols "$appletvos_dsym" )
+    appletvos_bcsymbolmap_uuids=$(dwarfdump --uuid "$appletvos_dsym" | cut -d ' ' -f2)
+    for bc_symbol_map in `find "$appletvos_archive/$xcarchive_bc_symbol_maps" -type f -name "*.bcsymbolmap"`; do
+        for uuid in $appletvos_bcsymbolmap_uuids; do
+            if [ "$(basename "$bc_symbol_map" ".bcsymbolmap")" == "$uuid" ]; then
+                dsymutil --symbol-map "$bc_symbol_map" "$appletvos_dsym"
+                appletvos_debug_symbols_opts+=( -debug-symbols "$framework_dir/$bc_symbol_map" )
+            fi
+        done
     done
 
     appletvsimulator_debug_symbols_opts=( -debug-symbols "$framework_dir/$appletvsimulator_archive/$xcarchive_dsym" )
