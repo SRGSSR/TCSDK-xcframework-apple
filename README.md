@@ -32,4 +32,4 @@ To make the generated framework available:
 3. Push the commit and the tag to GitHub.
 4. Attach the binary to the tag on GitHub.
 
-Do not commit the binaries in the repository, as this would slow done checkouts made by SPM as the repostory grows.
+Do not commit the binaries in the repository, as this would slow done checkouts made by SPM as the repository grows.
